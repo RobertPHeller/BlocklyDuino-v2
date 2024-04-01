@@ -100,10 +100,154 @@ Code.copyToClipboard = function () {
     }
 };
 
+Code.replaceColons = function(string) {
+    //console.log("*** Code.replaceColons("+string+")");
+    var result = "";
+    var temp = string;
+    var c = temp.indexOf(':');
+    //console.log("*** Code.replaceColons: c = "+c);
+    while (c >= 0) {
+        result = result + temp.substring(0,c) + "_";
+        temp = temp.substring(c+1);
+        //console.log("*** Code.replaceColons: result = "+result);
+        c = temp.indexOf(':');
+        //console.log("*** Code.replaceColons: c = "+c);
+    }
+    result += temp;
+    //console.log("*** Code.replaceColons: result = "+result);
+    return result;
+}
+
+Code.getAllBoards = function (callback) {
+    var url = "http://127.0.0.1:8080/boards"
+    var method = "GET"
+    var async = true;
+    var request = new XMLHttpRequest();
+    request.onreadystatechange = function() {
+        if (request.readyState != 4) {
+            return;
+        }
+        var status = parseInt(request.status);
+        var errorInfo = null;
+        var response = request.response;
+        callback(status, response);
+    }
+    request.open(method, url, async);
+    request.send();
+    
+}
+Code.loadBoardSelectModal = function () {
+    Code.getAllBoards(function(status, response) {
+                      if (status == 200) {
+                          //var div=document.getElementById("hideSelectScrollbar");
+                          var inner = "";
+                          //console.log("*** response.length is "+response.length);
+                          while (response.length > 0) {
+                              var nameend = response.indexOf("\n");
+                              var name = response.substring(0,nameend);
+                              response = response.substring(nameend+1);
+                              var newoptgroup='<optgroup label="'+name+'">';
+                              //console.log("*** name = "+name);
+                              newoptgroup += '<option value="none" >...</option>';
+                              //console.log("*** response[0] is "+response[0]);
+                              while (response[0] != "\n") {
+                                  var boardlineend = response.indexOf("\n");
+                                  var boardline = response.substring(0,boardlineend);
+                                  //console.log("*** boardline = "+boardline);
+                                  response = response.substring(boardlineend+1);
+                                  //console.log("*** response[0] is "+response[0]);
+                                  var split=boardline.indexOf(" ");
+                                  var code=boardline.substring(0,split);
+                                  //console.log("*** code = "+code);
+                                  var split2 = boardline.indexOf(" ",split+1);
+                                  var core = boardline.substring(split+1,split2);
+                                  split=split2;
+                                  split2 = boardline.indexOf(" ",split+1);
+                                  var mcu = boardline.substring(split+1,split2);
+                                  split=split2;
+                                  split2 = boardline.indexOf(" ",split+1);
+                                  var variant=boardline.substring(split+1,split2);
+                                  var name=boardline.substring(split2+1);
+                                  //console.log("*** name = "+name);
+                                  var value=Code.replaceColons(code);
+                                  if (value.indexOf("arduino_avr_") == 0) {
+                                      var last = value.lastIndexOf("_");
+                                      value = "arduino"+value.substring(last);
+                                  }
+                                  //console.log("*** value = "+value);
+                                  if (code.indexOf("esp32:esp32:") == 0) {
+                                      //console.log("*** (esp32:esp32:) value = "+value);
+                                      //console.log("*** (esp32:esp32:) variant is "+variant);
+                                      //console.log("*** (esp32:esp32:) code is "+code);
+                                      if (Object.keys(esp32_variants).indexOf(variant) >= 0) {
+                                          profile[value] = JSON.parse(JSON.stringify(esp32_variants[variant]));
+                                          profile[value][0]._id = value;
+                                          profile[value][0].description = name;
+                                          profile[value][0].upload_arg = code;
+                                      }
+                                  }
+                                  var newopt = '<option value="'+value+'">'+name+"</option>\n";
+                                  newoptgroup += newopt;
+                              }
+                              newoptgroup += "</optgroup>\n";
+                              //console.log("*** newoptgroup = "+newoptgroup);
+                              inner += newoptgroup;
+                              response = response.substring(1);
+                              //console.log("*** response.length is "+response.length);                              
+                          }
+                          var select = document.getElementById("boardDescriptionSelector");
+                          //console.log("*** select is "+select);
+                          select.innerHTML = inner;
+                          select = document.getElementById("boardMenu");
+                          //console.log("*** select is "+select);
+                          select.innerHTML = inner;
+                          //console.log("*** select.innerHtml is "+select.innerHtml);
+                      }
+                  });
+}
+
+Code.getAllPorts = function(callback) {
+    var url = "http://127.0.0.1:8080/ports"
+    var method = "GET"
+    var async = true;
+    var request = new XMLHttpRequest();
+    request.onreadystatechange = function() {
+        if (request.readyState != 4) {
+            return;
+        }
+        var status = parseInt(request.status);
+        var errorInfo = null;
+        var response = request.response;
+        callback(status, response);
+    }
+    request.open(method, url, async);
+    request.send();
+    
+}
+
+Code.loadPortMenu = function() {
+    Code.getAllPorts(function(status, response) {
+                     if (status == 200) {
+                         var inner = "<option value='none'>...</option>\n";
+                         while (response.length > 0) {
+                             var portend = response.indexOf("\n");
+                             var port = response.substring(0,portend);
+                             response = response.substring(portend+1);
+                             inner += '<option value="'+port+'">'+port+"</option>\n";
+                         }
+                         select = document.getElementById("serialMenu");
+                         select.innerHTML = inner;
+                     }
+                 });
+} 
+
+    
+
 /**
  * modal controllers
  */
 Code.boardsListModalShow = function () {
+    Code.loadBoardSelectModal();
     document.getElementById('overlayForModals').style.display = "block";
     document.getElementById('boardListModal').classList.add('show');
     for (var i = 0; i < document.getElementById("boardDescriptionSelector").length; i++)
@@ -118,6 +262,7 @@ Code.boardsListModalShow = function () {
     Code.boardDescription();
 };
 Code.portsListModalShow = function () {
+    Code.loadPortMenu();
     document.getElementById('overlayForModals').style.display = "block";
     document.getElementById('portListModal').classList.add('show');
     var portValue = document.getElementById("serialMenu").value;
@@ -154,13 +299,14 @@ Code.portsListModalHide = function (event) {
  **/
 Code.boardDescription = function () {
     var boardValue = document.getElementById("boardDescriptionSelector").value;
-    if (boardValue === '')
+    //console.log("*** Code.boardDescription() boardValue = "+boardValue);
+    if (boardValue === '' || Object.keys(profile).indexOf(boardValue) < 0)
         boardValue = 'none';
     document.getElementById("board_mini_picture").setAttribute("src", profile[boardValue][0]['picture']);
-    document.getElementById("board_connect").textContent = profile[boardValue][0]['usb'];
-    document.getElementById("board_cpu").textContent = profile[boardValue][0]['cpu'];
-    document.getElementById("board_voltage").textContent = profile[boardValue][0]['voltage'];
-    document.getElementById("board_inout").textContent = profile[boardValue][0]['inout'];
+    //document.getElementById("board_connect").textContent = profile[boardValue][0]['usb'];
+    //document.getElementById("board_cpu").textContent = profile[boardValue][0]['cpu'];
+    //document.getElementById("board_voltage").textContent = profile[boardValue][0]['voltage'];
+    //document.getElementById("board_inout").textContent = profile[boardValue][0]['inout'];
 };
 
 /**
@@ -277,29 +423,25 @@ Code.uploadCodeFile = function () {
 Code.uploadCode = function (code, boardId, mode, callback) {
     //var spinner = new Spinner().spin(target);
 
-    var boardSpecs = {
-        "arduino_leonardo": "arduino:avr:leonardo",
-        "arduino_mega": "arduino:avr:mega",
-        "arduino_micro": "arduino:avr:micro",
-        "arduino_mini": "arduino:avr:mini",
-        "arduino_nano": "arduino:avr:nano",
-        "arduino_pro8": "arduino:avr:pro",
-        "arduino_pro16": "arduino:avr:pro",
-        "arduino_uno": "arduino:avr:uno",
-        "arduino_yun": "arduino:avr:yun",
-        "lilypad": "arduino:avr:lilypad"
-    };
     var url = "http://127.0.0.1:8080/" + mode + "/";
     var method = "POST";
     var async = true;
     var request = new XMLHttpRequest();
     var comma = "";
     
+    console.log("*** Code.uploadCode: boardId is "+boardId);
+    
     if (boardId != '') {
-        url += "board=" + boardSpecs[boardId];
+        console.log("*** Code.uploadCode: upload_arg is "+profile[boardId][0].upload_arg);
+        url += "board=" + profile[boardId][0].upload_arg;
         comma = ","
     }
-    
+    if (mode == "upload") {
+        var port=document.getElementById("serialMenu").value;
+        if (port!== 'none') {
+            url += comma + "port="+port;
+        }
+    }
     if (document.getElementById("detailedCompilation").checked) {
         url += comma + "verbose=";
     }

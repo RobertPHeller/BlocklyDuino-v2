@@ -13,7 +13,7 @@
         <link rel="stylesheet" href="./blocklyduino/css/blocklyduino.css" />
         <link rel="stylesheet" href="./blocklyduino/css/override_css.css" />
     </head>
-    <body>
+    <body onload="/*Code.loadBoardSelectModal(); Code.loadPortMenu();*/">
         <div class="table_wrapper">
             <table id="globalTable">
                 <tr id="optionsTop">
@@ -655,8 +655,8 @@
         editor.findPrevious();
         <!-- require('../CLI_functions.js'); -->
         <!-- require('../IDE_functions.js'); -->
-        require('../resources/app.asar/CLI_functions.js');
-        require('../resources/app.asar/IDE_functions.js');
-        require('../nodejs/js/webServer.js');
+        <!-- require('../resources/app.asar/CLI_functions.js'); -->
+        <!-- require('../resources/app.asar/IDE_functions.js'); -->
+        <!-- require('../nodejs/js/webServer.js'); -->
     </script>
 </HTML>

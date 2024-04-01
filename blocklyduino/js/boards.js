@@ -25,7 +25,9 @@ Code.setBoard = function () {
         boardId = "none";
     }
     document.getElementById('boardMenu').value = boardId;
-    profile.default = profile[boardId][0];
+    if (Object.keys(profile).indexOf(boardId) >= 0) {
+        profile.default = profile[boardId][0];
+    }
 	// change tooltip & info when a board is selected
 	if (boardId != "none") {
 		document.getElementById('boardButton').classList.add('active');
@@ -63,7 +65,9 @@ Code.changeBoard = function ()  {
     } else {
         search = search.replace(/\?/, '?board=' + newBoard + '&');
     }
-    profile["default"] = profile[newBoard][0];
+    if (Object.keys(profile).indexOf(newBoard) >= 0) {
+        profile["default"] = profile[newBoard][0];
+    }
 	document.getElementById("boardDescriptionSelector").selectedIndex = newBoard;
 	document.getElementById("boardDescriptionSelector").value = newBoard;
 	document.getElementById("boardSelected_span").textContent = profile["default"].description;
